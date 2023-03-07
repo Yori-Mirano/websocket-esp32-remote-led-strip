@@ -1,0 +1,84 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8"/>
+    <title>Websocket ESP32 remote LED strip - client example</title>
+  </head>
+  <body>
+    <script>
+      // Connection to the remote strip
+      const hostname = prompt('remote strip ip', '192.168.1.43');
+      connect();
+
+
+      function connect() {            
+        const socket = new WebSocket(`ws://${hostname}`);
+        let loopTimeout;
+  
+        // When connected, the remote strip send a message with some data:
+        //   {
+        //     "stripLength": 88,
+        //     "colorPerPixel": 4,
+        //     "fpsMax": 50
+        //   }
+        socket.onmessage = event => {    
+          try {
+            const jsonData = JSON.parse(event.data);
+  
+            if (jsonData.stripLength && jsonData.colorPerPixel && jsonData.fpsMax) {
+              // Create pixel data array. Each byte is for one color component of a pixel.
+              // ex: [ r, g, b, w,  r, g, b, w,  r, g, b, w,  r, g, b, w, ... , r, g, b, w ]
+              //       <--px 0-->   <--px 1-->   <--px 2-->   <--px 3-->  ...   <--px n-->
+              const rawPixelStripData = new Uint8Array(jsonData.stripLength * jsonData.colorPerPixel);
+  
+              // Here starts the main loop for an animation
+              function loop() {
+                loopTimeout = setTimeout( () => {
+                  loop();
+  
+                  const time = performance.now();
+                  const index = Math.floor((Math.cos(time * 0.001) / 2 + 0.5) * jsonData.stripLength);
+  
+                  // Modifiying pixel data
+                  fillColor(rawPixelStripData, jsonData.colorPerPixel, jsonData.stripLength, 0, 8, 16, 0);
+                  setPixelColor(rawPixelStripData, jsonData.colorPerPixel, index, 255, 64, 16, 8);
+  
+                  // Sending the pixel data to the remote strip
+                  socket.send(rawPixelStripData);
+                }, 1000 / jsonData.fpsMax);
+              }
+  
+              loop();
+            }
+          } catch (e) { }
+        };
+
+        
+        // auto reconnect on close
+        socket.onclose = () => {
+          clearTimeout(loopTimeout);
+          this.connect()
+        };
+      }
+
+
+      // Example of function to fill the strip with a color
+      function setPixelColor(rawPixelStripData, colorPerPixel, index, r, g, b, w = 0) {
+        rawPixelStripData[index * colorPerPixel]    = Math.floor(r);
+        rawPixelStripData[index * colorPerPixel +1] = Math.floor(g);
+        rawPixelStripData[index * colorPerPixel +2] = Math.floor(b);
+
+        if (colorPerPixel == 4) {
+          rawPixelStripData[index * colorPerPixel +3] = Math.floor(w);
+        }
+      }
+
+      // Example of function to set a color to a specific pixel
+      function fillColor(rawPixelStripData, colorPerPixel, length, r, g, b, w = 0) {
+        for (let i = 0; i < length; i++) {
+          setPixelColor(rawPixelStripData, colorPerPixel, i, r, g, b, w);
+        }
+      }
+    </script>
+  </body>
+</html>

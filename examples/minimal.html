@@ -1,0 +1,34 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8"/>
+    <title>Websocket ESP32 remote LED strip - client example</title>
+  </head>
+  <body>
+    <script>
+      const hostname  = prompt('remote strip ip', '192.168.1.43');
+      const socket    = new WebSocket(`ws://${hostname}`);
+
+      socket.onmessage = event => {    
+        try {
+          const jsonData = JSON.parse(event.data);
+          const rawData = new Uint8Array(jsonData.stripLength * jsonData.colorPerPixel);
+
+          for (let i = 0; i < jsonData.stripLength; i++) {
+            const r = 255 * (i / jsonData.stripLength);
+            const g = 64;
+            const b = 255 * (1 - (i / jsonData.stripLength));
+            const w = 32;
+
+            rawData[i * jsonData.colorPerPixel]    = Math.floor(r);
+            rawData[i * jsonData.colorPerPixel +1] = Math.floor(g);
+            rawData[i * jsonData.colorPerPixel +2] = Math.floor(b);
+            rawData[i * jsonData.colorPerPixel +3] = Math.floor(w);
+          }
+          
+          socket.send(rawData);
+        } catch (e) { }
+      };
+    </script>
+  </body>
+</html>

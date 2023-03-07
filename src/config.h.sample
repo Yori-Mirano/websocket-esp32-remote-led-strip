@@ -1,0 +1,19 @@
+#ifndef CONFIG_H
+#define CONFIG_H
+
+  #define DEMO_MODE                 0 // 0 = off, 1 = beam, 2 = k2000, 3 = wave
+
+  #define NEOPIXEL_TYPE             NEO_GRBW + NEO_KHZ800
+  #define PIN                       2 // GPIO 2, or D4 on Wemos D1 mini
+  #define STRIP_LENGTH              88
+  #define COLOR_PER_PIXEL           4
+
+  #define PRIMARY_INDICATOR_PIXEL_INDEX    (STRIP_LENGTH + 1)
+  #define SECONDARY_INDICATOR_PIXEL_INDEX  (STRIP_LENGTH)
+
+  #define FPS_MAX 50
+
+  #define _SSID_      "wifi_ssid"
+  #define _PASSWORD_  "wifi_password"
+
+#endif
